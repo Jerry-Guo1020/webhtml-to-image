@@ -3,32 +3,119 @@
         <div ref="canvas" class="canvas">
             <h1 class="main-title">To-Do List</h1>
             <div class="column-container">
-                <div class="column-card">
-                    <div class="column-header">To Do</div>
+                <div v-for="(todo, todoIndex) in todo" :key="todo.title" class="column-card">
+                    <div class="column-header">{{ todo.title }}</div>
                     <div class="task-list">
-                        <div class="task-item"><span class="task-num">1.</span>吃饭</div>
-                        <div class="task-item"><span class="task-num">2.</span>睡觉</div>
-                        <div class="task-item"><span class="task-num">3.</span>刷抖音</div>
+                        <div v-for="(task, taskIndex) in todo.taskList" class="task-item">
+                            <span class="task-num">{{ taskIndex + 1 }} .</span>
+                            {{ task }}
+                        </div>
                     </div>
                 </div>
 
-                <div class="column-card">
-                    <div class="column-header">Done</div>
+                <div v-for="(done, doneIndex) in done" :key="done.title" class="column-card">
+                    <div class="column-header">{{ done.title }}</div>
+
                     <div class="task-list">
-                        <div class="task-item-done"><span class="task-num">1.</span>洗澡</div>
-                        <div class="task-item-done"><span class="task-num">2.</span>学习</div>
-                        <div class="task-item-done"><span class="task-num">3.</span>跑步</div>
+                        <div v-for="(task, taskIndex) in done.taskList" :key="taskIndex" class="task-item-done">
+                            <span class="task-num" :style="`text-decoration:none`">{{ taskIndex + 1 }} .</span>
+                            {{ task }}
+                        </div>
                     </div>
+
                 </div>
 
             </div>
+        </div>
+
+        <div class="controls">
+            <button class="btn-add" @click="handleAddTask">
+                添加新任务
+            </button>
+            <button class="btn-export" @click="handleExportImage" :disabled="isGenerating">
+                {{ isGenerating ? '生成中...' : '导出为图片' }}
+            </button>
         </div>
     </div>
 </template>
 
 <script setup>
 import html2canvas from 'html2canvas'
-import { ref } from 'vue';
+import { reactive, ref } from 'vue';
+
+// 状态管理
+const isGenerating = ref(false);
+
+// 使用ref来绑定 document.getElementById()
+const canvas = ref(null)
+
+// 列表
+const todo = reactive([
+    {
+        title: "To Do",
+        taskList: [
+            "吃饭",
+            "睡觉",
+            "刷抖音"
+        ]
+    }
+])
+
+// 列表
+const done = reactive([
+    {
+        title: "Done",
+        taskList: [
+            "吃饭",
+            "睡觉",
+            "刷抖音"
+        ]
+    }
+])
+
+// 实行导出为照片的任务
+
+// 1、添加任务按钮
+const handleAddTask = () => {
+    const text = prompt("请输入你需要添加的任务")
+    if (text) {
+        todo[0].taskList.push(text)
+    }
+}
+
+// 2、导出为照片按钮
+const handleExportImage = async () => {
+    const element = canvas.value
+    if (!element) {
+        alert("未找到dom元素")
+        return
+    }
+
+    isGenerating.value = true
+
+    try {
+        const canva = await html2canvas(element, {
+            scale: 2, // 提高清晰度
+            backgroundColor: "#E6E3D8", // 确保背景色
+            useCORS: true
+        });
+
+        const imgData = canva.toDataURL('image/png')
+        const link = document.createElement("a")
+        link.download = "todoList.png"
+        link.href = imgData;
+        document.body.appendChild(link)
+        link.click()
+        document.body.removeChild(link)
+    } catch (error) {
+        console.error("生成失败:", error);
+        alert("生成图片失败，请查看控制台");
+    } finally {
+        isGenerating.value = false;
+    }
+
+}
+
 
 
 </script>
@@ -115,5 +202,40 @@ import { ref } from 'vue';
 .task-num {
     margin-right: 8px;
     font-weight: 500;
+}
+
+.controls {
+    margin-top: 20px;
+    display: flex;
+    gap: 15px;
+}
+
+button {
+    padding: 10px 20px;
+    font-size: 16px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: opacity 0.2s;
+}
+
+.btn-add {
+    background-color: #4CAF50;
+    color: white;
+}
+
+.btn-export {
+    background-color: #2196F3;
+    color: white;
+}
+
+button:hover {
+    opacity: 0.9;
+}
+
+button:disabled {
+    background-color: #ccc;
+    cursor: not-allowed;
 }
 </style>
